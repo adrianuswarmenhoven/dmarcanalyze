@@ -1,0 +1,10 @@
+  loglevel: debug # DMARCANALYZE_LOG_LEVEL
+  logformat: text # DMARCANALYZE_LOG_FORMAT
+  imap:
+    address:  # DMARCANALYZE_IMAP_SERVER_ADDRESS
+    port: 993 # DMARCANALYZE_IMAP_SERVER_PORT
+    username: "" # DMARCANALYZE_IMAP_USERNAME
+    password: "" # DMARCANALYZE_IMAP_PASSWORD
+  database:
+    driver: sqlite # DMARCANALYZE_DATABASE_DRIVER
+    dsn: ../data/dmarc.db # DMARCANALYZE_DATABASE_DSN
