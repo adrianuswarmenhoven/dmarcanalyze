@@ -13,8 +13,14 @@ func main() {
 	slog.SetDefault(slog.New(h))
 
 	programLevel.Set(slog.LevelDebug)
-
-	reps, err := getReportsViaIMAP4(Configuration.IMAP.Address+":"+Configuration.IMAP.Port, Configuration.IMAP.Username, Configuration.IMAP.Password, time.Now().AddDate(-100, 0, -1), time.Now())
+	startTime, err := getLastRun()
+	if err != nil {
+		slog.Error("error getting last run", "error", err)
+		os.Exit(1)
+	}
+	setLastRun(time.Now().Add(-time.Second))
+	endTime := time.Now().AddDate(100, 0, 1)
+	reps, err := getReportsViaIMAP4(Configuration.IMAP.Address+":"+Configuration.IMAP.Port, Configuration.IMAP.Username, Configuration.IMAP.Password, startTime, endTime)
 	if err != nil {
 		slog.Error("error getting reports", "error", err)
 		os.Exit(1)

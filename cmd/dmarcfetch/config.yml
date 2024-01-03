@@ -7,4 +7,4 @@
     password: "" # DMARCANALYZE_IMAP_PASSWORD
   database:
     driver: sqlite # DMARCANALYZE_DATABASE_DRIVER
-    dsn: ../data/dmarc.db # DMARCANALYZE_DATABASE_DSN
+    dsn: ../../data/dmarc.db # DMARCANALYZE_DATABASE_DSN

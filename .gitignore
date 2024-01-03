@@ -1,2 +1,4 @@
 scratch.txt
 dmarcanalyze.code-workspace
+data/*
+*dmarc.db

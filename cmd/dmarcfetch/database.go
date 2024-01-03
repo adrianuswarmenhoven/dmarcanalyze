@@ -3,8 +3,10 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"log/slog"
 	"strings"
+	"time"
 
 	// Database drivers
 	_ "github.com/go-sql-driver/mysql" // mysql
@@ -126,11 +128,11 @@ var (
 		begin_date INTEGER(8),
 		end_date INTEGER(8)
 		);
-		CREATE UNIQUE INDEX metadata_report_id ON metadata (report_id);
-		CREATE INDEX metadata_organization ON metadata (organization);
-		CREATE INDEX metadata_email ON metadata (email);
-		CREATE INDEX metadata_begin_date ON metadata (begin_date);
-		CREATE INDEX metadata_end_date ON metadata (end_date);
+		CREATE UNIQUE INDEX IF NOT EXISTS metadata_report_id ON metadata (report_id);
+		CREATE INDEX IF NOT EXISTS metadata_organization ON metadata (organization);
+		CREATE INDEX IF NOT EXISTS metadata_email ON metadata (email);
+		CREATE INDEX IF NOT EXISTS metadata_begin_date ON metadata (begin_date);
+		CREATE INDEX IF NOT EXISTS metadata_end_date ON metadata (end_date);
 		`,
 		// INSERT INTO metadata
 		"insert into metadata": `
@@ -165,13 +167,13 @@ var (
 		   ON UPDATE CASCADE
 		   ON DELETE CASCADE
 		);
-		CREATE INDEX policy_published_domain ON policy_published (domain);
-		CREATE INDEX policy_published_adkim ON policy_published (adkim);
-		CREATE INDEX policy_published_aspf ON policy_published (aspf);
-		CREATE INDEX policy_published_policy ON policy_published (policy);
-		CREATE INDEX policy_published_spolicy ON policy_published (spolicy);
-		CREATE INDEX policy_published_percentage ON policy_published (percentage);
-		CREATE INDEX policy_published_report_id ON policy_published (report_id);
+		CREATE INDEX IF NOT EXISTS policy_published_domain ON policy_published (domain);
+		CREATE INDEX IF NOT EXISTS policy_published_adkim ON policy_published (adkim);
+		CREATE INDEX IF NOT EXISTS policy_published_aspf ON policy_published (aspf);
+		CREATE INDEX IF NOT EXISTS policy_published_policy ON policy_published (policy);
+		CREATE INDEX IF NOT EXISTS policy_published_spolicy ON policy_published (spolicy);
+		CREATE INDEX IF NOT EXISTS policy_published_percentage ON policy_published (percentage);
+		CREATE INDEX IF NOT EXISTS policy_published_report_id ON policy_published (report_id);
 		`,
 		// INSERT INTO policy_published
 		"insert into policy_published": `
@@ -214,19 +216,19 @@ var (
 	   		ON UPDATE CASCADE
 	   		ON DELETE CASCADE
 		);
-		CREATE INDEX record_source_ip ON record (source_ip);
-		CREATE INDEX record_count ON record (count);
-		CREATE INDEX record_disposition ON record (disposition);
-		CREATE INDEX record_dkim ON record (dkim);
-		CREATE INDEX record_spf ON record (spf);
-		CREATE INDEX record_header_from ON record (header_from);
-		CREATE INDEX record_dkim_auth_result_domain ON record (dkim_auth_result_domain);
-		CREATE INDEX record_dkim_auth_result_result ON record (dkim_auth_result_result);
-		CREATE INDEX record_dkim_auth_result_selector ON record (dkim_auth_result_selector);
-		CREATE INDEX record_spf_auth_result_domain ON record (spf_auth_result_domain);
-		CREATE INDEX record_spf_auth_result_result ON record (spf_auth_result_result);
-		CREATE INDEX record_spf_auth_result_scope ON record (spf_auth_result_scope);
-		CREATE INDEX record_report_id ON record (report_id);
+		CREATE INDEX IF NOT EXISTS record_source_ip ON record (source_ip);
+		CREATE INDEX IF NOT EXISTS record_count ON record (count);
+		CREATE INDEX IF NOT EXISTS record_disposition ON record (disposition);
+		CREATE INDEX IF NOT EXISTS record_dkim ON record (dkim);
+		CREATE INDEX IF NOT EXISTS record_spf ON record (spf);
+		CREATE INDEX IF NOT EXISTS record_header_from ON record (header_from);
+		CREATE INDEX IF NOT EXISTS record_dkim_auth_result_domain ON record (dkim_auth_result_domain);
+		CREATE INDEX IF NOT EXISTS record_dkim_auth_result_result ON record (dkim_auth_result_result);
+		CREATE INDEX IF NOT EXISTS record_dkim_auth_result_selector ON record (dkim_auth_result_selector);
+		CREATE INDEX IF NOT EXISTS record_spf_auth_result_domain ON record (spf_auth_result_domain);
+		CREATE INDEX IF NOT EXISTS record_spf_auth_result_result ON record (spf_auth_result_result);
+		CREATE INDEX IF NOT EXISTS record_spf_auth_result_scope ON record (spf_auth_result_scope);
+		CREATE INDEX IF NOT EXISTS record_report_id ON record (report_id);
 		`,
 		// INSERT INTO record
 		"insert into record": `
@@ -347,6 +349,7 @@ func storeReports(reps []*report.Aggregate) error {
 		slog.Error("error opening database", "error", err)
 		return err
 	}
+	defer db.Close()
 reportLoop:
 	for _, report := range reps {
 		slog.Debug("storing report", "report", report.Metadata.ReportID)
@@ -408,5 +411,51 @@ reportLoop:
 		}
 	}
 
+	return nil
+}
+
+func getLastRun() (time.Time, error) {
+	db := database{}
+	err := db.Open(Configuration.Database.Driver, Configuration.Database.DSN)
+	if err != nil {
+		slog.Error("error opening database", "error", err)
+		return time.Now(), err
+	}
+	defer db.Close()
+	rows, err := db.backendDB.Query("SELECT last_run FROM system")
+	if err != nil {
+		slog.Error("error querying last_run", "error", err)
+		return time.Now(), err
+	}
+	defer rows.Close()
+	last_run := int64(0)
+	for rows.Next() {
+		if err := rows.Scan(&last_run); err != nil {
+			log.Fatal(err)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	if last_run == 0 {
+		return time.Now().AddDate(-100, 0, -1), nil
+	}
+	return time.Unix(last_run, 0), nil
+}
+
+func setLastRun(last_run time.Time) error {
+	db := database{}
+	err := db.Open(Configuration.Database.Driver, Configuration.Database.DSN)
+	if err != nil {
+		slog.Error("error opening database", "error", err)
+		return err
+	}
+	defer db.Close()
+	// FIXME: Variables for postgress
+	_, err = db.backendDB.Exec("INSERT INTO system (last_run) VALUES (?)", last_run.Unix())
+	if err != nil {
+		slog.Error("error inserting last_run", "error", err)
+		return err
+	}
 	return nil
 }
