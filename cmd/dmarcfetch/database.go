@@ -22,92 +22,6 @@ type database struct {
 	preparedStatements map[string]*sql.Stmt
 }
 
-// Aggregate represents a dmarc aggregate report
-/*type Aggregate struct {
-	XMLName         xml.Name        `xml:"feedback"`
-	Metadata        Metadata        `xml:"report_metadata"`
-	PolicyPublished PolicyPublished `xml:"policy_published"`
-	Records         []Record        `xml:"record"`
-}
-
-// Metadata represents feedback>report_metadata section
-type Metadata struct {
-	OrgName          string    `xml:"org_name"`
-	Email            string    `xml:"email"`
-	ExtraContactInfo string    `xml:"extra_contact_info"`
-	ReportID         string    `xml:"report_id"`
-	DateRange        DateRange `xml:"date_range"`
-}
-
-// PolicyPublished represents feedback>policy_published section
-type PolicyPublished struct {
-	Domain     string `xml:"domain"`
-	ADKIM      string `xml:"adkim"`
-	ASPF       string `xml:"aspf"`
-	Policy     string `xml:"p"`
-	SPolicy    string `xml:"sp"`
-	Percentage *int   `xml:"pct"`
-}
-
-
-
-
-// Record represents feedback>record section
-type Record struct {
-	Row         Row         `xml:"row"`
-	Identifiers Identifiers `xml:"identifiers"`
-	AuthResults AuthResults `xml:"auth_results"`
-}
-
-// Row represents feedback>record>row section
-type Row struct {
-	SourceIP        string          `xml:"source_ip"`
-	Count           int             `xml:"count"`
-	PolicyEvaluated PolicyEvaluated `xml:"policy_evaluated"`
-}
-
-// PolicyEvaluated represents feedback>record>row>policy_evaluated section
-type PolicyEvaluated struct {
-	Disposition string `xml:"disposition"`
-	DKIM        string `xml:"dkim"`
-	SPF         string `xml:"spf"`
-}
-
-// Identifiers represents feedback>record>identifiers section
-type Identifiers struct {
-	HeaderFrom string `xml:"header_from"`
-}
-
-// AuthResults represents feedback>record>auth_results section
-type AuthResults struct {
-	DKIM DKIMAuthResult `xml:"dkim"`
-	SPF  SPFAuthResult  `xml:"spf"`
-}
-
-// DKIMAuthResult represents feedback>record>auth_results>dkim sections
-type DKIMAuthResult struct {
-	Domain   string `xml:"domain"`
-	Result   string `xml:"result"`
-	Selector string `xml:"selector"`
-}
-
-// SPFAuthResult represents feedback>record>auth_results>spf section
-type SPFAuthResult struct {
-	Domain string `xml:"domain"`
-	Result string `xml:"result"`
-	Scope  string `xml:"scope"`
-}
-
-type DateRange struct {
-	Begin Time `xml:"begin" json:"begin"`
-	End   Time `xml:"end" json:"end"`
-}
-
-// Time is the custom time for DateRange.Begin and DateRange.End values
-type Time struct {
-	time.Time
-}
-*/
 var (
 	preparedStatements = map[string]string{
 		// CREATE TABLE system
@@ -266,15 +180,15 @@ var (
 )
 
 const (
-	maxParams = 14 // Maximum number of parameters in a prepared statement, used to replace $1, $2, etc. with ? (for sqlite and mysql
+	maxParams = 14 // Maximum number of parameters in a prepared statement, used to replace $1, $2, etc. with ? (for sqlite and mysql)
 )
 
 /*
 insert full record variables ) as transaction
 */
-func (db *database) Open(driver, dsn string) error {
+func (db *database) Open(driver, connectionstring string) error {
 	var err error
-	db.backendDB, err = sql.Open(driver, dsn)
+	db.backendDB, err = sql.Open(driver, connectionstring)
 	if err != nil {
 		slog.Error("error opening database", "error", err)
 		return err
@@ -344,14 +258,18 @@ func (db *database) initTables() error {
 
 func storeReports(reps []*report.Aggregate) error {
 	db := database{}
-	err := db.Open(Configuration.Database.Driver, Configuration.Database.DSN)
+	err := db.Open(Configuration.Database.Driver, Configuration.Database.ConnectionString)
 	if err != nil {
 		slog.Error("error opening database", "error", err)
 		return err
 	}
 	defer db.Close()
+	total := len(reps)
 reportLoop:
-	for _, report := range reps {
+	for id, report := range reps {
+		if Configuration.LogProgress > 0 && (id+1)%Configuration.LogProgress == 0 {
+			slog.Info("Storing reports:", "current", id+1, "total", total) //id+1 because id starts at 0
+		}
 		slog.Debug("storing report", "report", report.Metadata.ReportID)
 		// Add metadata
 		_, err := db.preparedStatements["insert into metadata"].Exec(
@@ -416,15 +334,13 @@ reportLoop:
 
 func getLastRun() (time.Time, error) {
 	db := database{}
-	err := db.Open(Configuration.Database.Driver, Configuration.Database.DSN)
+	err := db.Open(Configuration.Database.Driver, Configuration.Database.ConnectionString)
 	if err != nil {
-		slog.Error("error opening database", "error", err)
 		return time.Now(), err
 	}
 	defer db.Close()
 	rows, err := db.backendDB.Query("SELECT last_run FROM system")
 	if err != nil {
-		slog.Error("error querying last_run", "error", err)
 		return time.Now(), err
 	}
 	defer rows.Close()
@@ -445,16 +361,14 @@ func getLastRun() (time.Time, error) {
 
 func setLastRun(last_run time.Time) error {
 	db := database{}
-	err := db.Open(Configuration.Database.Driver, Configuration.Database.DSN)
+	err := db.Open(Configuration.Database.Driver, Configuration.Database.ConnectionString)
 	if err != nil {
-		slog.Error("error opening database", "error", err)
 		return err
 	}
 	defer db.Close()
 	// FIXME: Variables for postgress
 	_, err = db.backendDB.Exec("INSERT INTO system (last_run) VALUES (?)", last_run.Unix())
 	if err != nil {
-		slog.Error("error inserting last_run", "error", err)
 		return err
 	}
 	return nil

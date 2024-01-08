@@ -69,7 +69,6 @@ func getReportsViaIMAP4(server, user, password string, since, before time.Time) 
 		return nil, fmt.Errorf("IMAP4 search failed: %w", err)
 	}
 	if len(searchData.All) == 0 {
-		slog.Info("No reports found")
 		return nil, fmt.Errorf("no reports found")
 	}
 	fetchOptions := &imap.FetchOptions{
@@ -91,7 +90,11 @@ func getReportsViaIMAP4(server, user, password string, since, before time.Time) 
 	}
 	reports := make([]*report.Aggregate, 0)
 	total := len(msgs)
+	slog.Info("Fetching messages", "total", total)
 	for id, msg := range msgs {
+		if Configuration.LogProgress > 0 && (id+1)%Configuration.LogProgress == 0 {
+			slog.Info("Fetching messages:", "current", id+1, "total", total) //id+1 because id starts at 0
+		}
 		slog.Debug("Fetching messages:", "current", id+1, "total", total) //id+1 because id starts at 0
 		bodyTxt := []byte{}
 		headersTxt := []byte{}
@@ -165,7 +168,6 @@ func getReportsViaIMAP4(server, user, password string, since, before time.Time) 
 			slog.Error("decode failed", "error", err, "attachment", string(attachment))
 			return nil, fmt.Errorf("decode failed: %w", err)
 		}
-		//fmt.Println(fmt.Sprintf("%#v", agg))
 		reports = append(reports, agg)
 	}
 	return reports, nil

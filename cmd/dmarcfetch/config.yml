@@ -1,10 +1,24 @@
-  loglevel: debug # DMARCANALYZE_LOG_LEVEL
-  logformat: text # DMARCANALYZE_LOG_FORMAT
+# Configuration file for dmarcfetch
+# The uppercase names are environment variables that can be used to override the values in this file
+# If the environment variable is not set, the value in this file will be used
+# It is recommended to use environment variables for sensitive data like passwords
+# If there are limited options for a setting, the possible values are listed in the comment between brackets
+  loglevel: info # DMARCANALYZE_LOG_LEVEL (debug, info, warn, error) - The verbosity of log output
+  logformat: text # DMARCANALYZE_LOG_FORMAT (off, text, json) - The format of log output
+  logprogress: 100 # DMARCANALYZE_LOG_PROGRESS - Will log progress every x records (0 to disable) )
+  sleep: 60 # DMARCANALYZE_SLEEP - The number of seconds to sleep between runs (0 to disable)
+
   imap:
-    address:  # DMARCANALYZE_IMAP_SERVER_ADDRESS
-    port: 993 # DMARCANALYZE_IMAP_SERVER_PORT
-    username: "" # DMARCANALYZE_IMAP_USERNAME
-    password: "" # DMARCANALYZE_IMAP_PASSWORD
+    address:  # DMARCANALYZE_IMAP_SERVER_ADDRESS - The name or IP address of the IMAP server
+    port: 993 # DMARCANALYZE_IMAP_SERVER_PORT - The port of the IMAP server (993 usually, must have SSL enabled)
+    username: "" # DMARCANALYZE_IMAP_USERNAME - The username for the IMAP server mail account
+    password: "" # DMARCANALYZE_IMAP_PASSWORD - The password for the IMAP server mail account
+    
   database:
-    driver: sqlite # DMARCANALYZE_DATABASE_DRIVER
-    dsn: ../../data/dmarc.db # DMARCANALYZE_DATABASE_DSN
+    driver: sqlite # DMARCANALYZE_DATABASE_DRIVER (sqlite, mysql, postgres)
+    connectionstring: ../../data/dmarc.db # DMARCANALYZE_DATABASE_CONNECTIONSTRING - The connection string for the database
+
+# Connection strings:
+# MySQL: <username>:<password>@<protocol>(<host>:<port>)/<dbname>?<param>=<value>... (for example: user:password@tcp(localhost:5555)/dbname?charset=utf8mb4&parseTime=True&loc=Local) )
+# Postgres: <protocol>://<username>:<password>@<host>:<port>/<dbname>?<param>=<value>... (for example: postgres://user:password@localhost:5555/dbname?charset=utf8mb4&parseTime=True&loc=Local) )
+# SQLite: <path to file> (for example: ../../data/dmarc.db)

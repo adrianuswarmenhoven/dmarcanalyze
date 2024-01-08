@@ -1,0 +1,32 @@
+# Configuration file for dmarcfetch
+# The uppercase names are environment variables that can be used to override the values in this file
+# If the environment variable is not set, the value in this file will be used
+# It is recommended to use environment variables for sensitive data like passwords
+# If there are limited options for a setting, the possible values are listed in the comment between brackets
+
+  loglevel: info # DMARCSQLTOXLS_LOG_LEVEL (debug, info, warn, error) - The verbosity of log output
+  logformat: text # DMARCSQLTOXLS_LOG_FORMAT (off, text, json) - The format of log output
+  logprogress: 100 # DMARCSQLTOXLS_LOG_PROGRESS - Will log progress every x records (0 to disable) )
+
+  database:
+    driver: sqlite # DMARCSQLTOXLS_DATABASE_DRIVER (sqlite, mysql, postgres)
+    connectionstring: ../../data/dmarc.db # DMARCSQLTOXLS_DATABASE_CONNECTIONSTRING - The connection string for the database
+
+# Connection strings:
+# MySQL: <username>:<password>@<protocol>(<host>:<port>)/<dbname>?<param>=<value>... (for example: user:password@tcp(localhost:5555)/dbname?charset=utf8mb4&parseTime=True&loc=Local) )
+# Postgres: <protocol>://<username>:<password>@<host>:<port>/<dbname>?<param>=<value>... (for example: postgres://user:password@localhost:5555/dbname?charset=utf8mb4&parseTime=True&loc=Local) )
+# SQLite: <path to file> (for example: ../../data/dmarc.db)
+
+  xls:
+    template: ../../data/template.xlsx # DMARCSQLTOXLS_XLS_TEMPLATE - The path to the template file
+    output: ../../data/test.xlsx # DMARCSQLTOXLS_XLS_OUTPUT - The path to the output file
+
+    style:
+      datasheet:
+        dateFormat: dd/mm/yyyy hh:mm:ss
+        rowabackgroundlight: "#dbe4ee"
+        rowabackgrounddark: "#cad6df"
+        rowafailfontcolor: "#ff0000"
+        rowbbackgroundlight: "#fff0cc"
+        rowbbackgrounddark: "#f7e2ad"
+        rowbfailfontcolor: "#ff0000"
