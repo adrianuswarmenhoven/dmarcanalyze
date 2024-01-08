@@ -1,6 +1,5 @@
 scratch.txt
 dmarcanalyze.code-workspace
-data/*
 data/dmarc.db
 data/test.xlsx
 cmd/dmarcfetch/dmarcfetch
