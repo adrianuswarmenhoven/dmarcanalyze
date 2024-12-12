@@ -68,7 +68,8 @@ func getReportsViaIMAP4(server, user, password string, since, before time.Time) 
 		slog.Error("IMAP4 search failed", "error", err)
 		return nil, fmt.Errorf("IMAP4 search failed: %w", err)
 	}
-	if len(searchData.All) == 0 {
+
+	if searchData.Count == 0 {
 		return nil, fmt.Errorf("no reports found")
 	}
 	fetchOptions := &imap.FetchOptions{

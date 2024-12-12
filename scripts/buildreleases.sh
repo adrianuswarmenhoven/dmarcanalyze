@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-version="v0.1.0"
+version="v0.2.0"
 
 oss=(linux darwin windows)
 archs=(amd64 arm64 arm)
